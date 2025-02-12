@@ -7,7 +7,7 @@ const ProjectSchema = new Schema(
       type: String,
       required: true,
     },
-    dexcription: {
+    description: {
       type: String,
       required: true,
     },

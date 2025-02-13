@@ -11,14 +11,13 @@ const generateToken = (data) => {
 
 const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
-    if (!username || !password || !email) {
+    if (!name || !password || !email || !role) {
       return res
         .status(400)
         .json({ message: "Username and password are required." });
     }
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Username already exists." });
@@ -27,7 +26,7 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(password, salt);
 
-    const newUser = new User({ name: username, password: hash, email });
+    const newUser = new User({ name: name, password: hash, email, role });
     await newUser.save();
 
     res.status(201).json({ message: "User registered successfully" });
@@ -55,7 +54,7 @@ const login = async (req, res) => {
   if (!isMatched) {
     return res.status(401).json({ message: "Incorrect password!" });
   }
-  const tokenData = { id: user._id };
+  const tokenData = { id: user._id, role: user.role };
   const refresh_token = jwt.sign(tokenData, process.env.REFRESH_TOKEN_SECRET, {
     expiresIn: "30h",
   });
@@ -64,7 +63,7 @@ const login = async (req, res) => {
 
   return res.status(200).json({
     token,
-    refresh_token
+    refresh_token,
   });
 };
 
@@ -96,9 +95,9 @@ const logout = (req, res) => {
   console.log(refreshToken);
   console.log([...sessions]);
 
-  // if (!sessions.has(refreshToken)) {
-  //   return res.status(400).json({ message: "No operation" });
-  // }
+  if (!sessions.has(refreshToken)) {
+    return res.status(400).json({ message: "No operation" });
+  }
 
   sessions.delete(refreshToken);
   return res.status(204).json({ message: "Logged out" });

@@ -28,47 +28,77 @@ const createProject = async (req, res) => {
     projectmanager,
   } = req.body;
   try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Only admin can create project" });
+
+    }
     const createdProject = new Project({
       name,
       description,
-      tasks,
+      tasks: tasks || [],
       status,
       deadline,
       members,
       projectmanager,
     });
+   
     await createdProject.save();
-    res.staus(200).json({message:"Project created successfully",createdProject})
+    res
+      .status(200)
+      .json({ message: "Project created successfully", createdProject });
   } catch (err) {
     return res
-    .status(500)
-    .json({ message: "Error creating project!", message: error.message });
+      .status(500)
+      .json({ message: "Error creating project!", error: err.message });
   }
 };
 
 const updateProject = async (req, res) => {
-    const { id } = req.params;
-    const { project } = req.body;
-    try {
-      const updatedProject = await Project.findByIdAndUpdate(id, project, { new: true });
-      res.status(200).json({ message: "Project updated successfully" });
-    } catch (err) {
-      res
-        .status(500)
-        .json({ message: "Error updating project!", error: err.message });
+  const { id } = req.params;
+  const { project } = req.body;
+  try {
+    const existingProject = await Project.findById(id);
+    if (!existingProject) {
+      return res.status(404).json({ message: "Project not found" });
     }
-  };
-
-  const deleteProject = async (req, res) => {
-    const { id } = req.params;
-    try {
-      const deletedProject = await Task.findByIdAndDelete(id);
-      res.status(200).json({ message: "Project deleted successfully" });
-    } catch (err) {
-      res
-        .status(500)
-        .json({ message: "Error deleting project!", error: err.message });
+    if (
+      req.user.role !== "admin" &&
+      req.user.role !== existingProject.projectmanager.toString()
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: You cannot update this project" });
     }
-  };
+    const updatedProject = await Project.findByIdAndUpdate(id, project, {
+      new: true,
+    });
+    res
+      .status(200)
+      .json({ message: "Project updated successfully", updatedProject });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error updating project!", error: err.message });
+  }
+};
 
-  module.exports = {getProject,createProject,updateProject,deleteProject};
+const deleteProject = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const existingProject = await Project.findById(id);
+    if (!existingProject) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Only admin can delete project" });
+    }
+    const deletedProject = await Project.findByIdAndDelete(id);
+    res.status(200).json({ message: "Project deleted successfully" });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error deleting project!", error: err.message });
+  }
+};
+
+module.exports = { getProject, createProject, updateProject, deleteProject };

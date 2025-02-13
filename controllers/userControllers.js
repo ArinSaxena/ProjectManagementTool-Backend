@@ -1,5 +1,4 @@
 const User = require("../models/userModel");
-const { getUser } = require("./authControllers");
 
 const getUserProfile = async (req, res) => {
   try {
@@ -31,33 +30,33 @@ const getAllusers = async (req, res) => {
   }
 };
 
-// const updateUser = (req,res) =>{
-//     try{
-//         const {email,name} = req.body;
-//         const user = await User.findById(req.params.id);
+const updateUser = async (req, res) => {
+  try {
+    const { email, name } = req.body;
+    const user = await User.findById(req.params.id);
 
-//     // Ensure only the owner or admin can update the user
-//     if (req.user.id !== user.id && req.user.role !== "admin") {
-//         return res.status(403).json({ success: false, message: "Unauthorized" });
-//       }
+    // Ensure only the owner or admin can update the user
+    if (req.user.id !== user._id && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
 
-//       user.name = name || user.name;
-//       user.email = email || user.email;
-//       await user.save();
-//       res.status(200).json({ message: "User updated successfully",user });
-//     } catch (err) {
-//       res.status(500).json({ success: false, message: err.message });
-//     }
-
-// }
+    user.name = name || user.name;
+    user.email = email || user.email;
+    await user.save();
+    res.status(200).json({ message: "User updated successfully", user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 const deleteUser = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ message: "Unauthorized" });
+    const {id} = req.params;
+       if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Authorization issues" });
     }
 
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     await user.deleteOne();
@@ -72,14 +71,15 @@ const deleteUser = async (req, res) => {
 const changeUserRole = async (req, res) => {
   try {
     const { role } = req.body;
-    const { id } = req.params.id;
+    const { id } = req.params;
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: "User not found" });
-
+    if (req.user.role !== "admin") {
+      return res.status(403).json({message:"Unauthorized, only admin can change roles!"})
+    }
     user.role = role;
     await user.save();
-    res.status(200).json({message:`User role Updated to ${role}`})
-    
+    res.status(200).json({ message: `User role Updated to ${role}`,user });
   } catch (err) {
     res
       .status(500)
@@ -87,4 +87,10 @@ const changeUserRole = async (req, res) => {
   }
 };
 
-module.exports = {getUserProfile,getAllusers,updateUser,deleteUser,changeUserRole};
+module.exports = {
+  getUserProfile,
+  getAllusers,
+  updateUser,
+  deleteUser,
+  changeUserRole,
+};

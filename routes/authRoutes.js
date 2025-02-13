@@ -4,8 +4,8 @@ const { register, login, logout, refreshToken } = require("../controllers/authCo
 
 const router = express.Router();
 
-router.post("/register",register)
 router.post("/login",login)
+router.post("/register",register)
 router.post("/token", refreshToken)
 router.delete("/logout",logout);
 

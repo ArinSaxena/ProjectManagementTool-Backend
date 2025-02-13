@@ -13,17 +13,17 @@ const ProjectSchema = new Schema(
     },
     projectmanager: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // User managing  this project
+      ref: "User", // projectmanager managing  this project
       required: true,
     },
     members: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // Users working on this project
     },
-    tasks: {
+    tasks: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Task", // Tasks associated with this project
-    },
+    }],
     status: {
       type: String,
       enum: ["active", "completed", "on-hold"],
@@ -35,6 +35,17 @@ const ProjectSchema = new Schema(
   },
   { timestamps: true }
 );
+
+ProjectSchema.pre("findOneAndDelete", async function (next) {
+  const projectId = this.getQuery()._id;
+
+  try {
+    await Task.deleteMany({ project: projectId }); // Delete all related tasks
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 const Project = mongoose.model("Project", ProjectSchema);
 module.exports = Project;

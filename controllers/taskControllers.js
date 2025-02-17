@@ -2,10 +2,7 @@ const Task = require("../models/taskModel");
 const Project = require("../models/projectModel");
 
 const getAllTasksForProjectManager = async (req, res) => {
-  // const { projectId } = req.params;
-
   try {
-    // console.log(projectId);
     const tasks = await Task.find({ createdBy: req.user._id })
       .populate("project", "name")
       .populate("assignedTo", "name");
@@ -20,7 +17,6 @@ const getAllTasksForProjectManager = async (req, res) => {
 
 const getAssignedTasksForUser = async (req, res) => {
   try {
-    // Fetch tasks assigned to the current user
     const tasks = await Task.find({ assignedTo: req.user._id }).populate(
       "project",
       "name"
@@ -71,7 +67,6 @@ const updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // Validate status field
     const validStatuses = ["pending", "in-progress", "completed"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid task status" });
@@ -98,13 +93,6 @@ const editTask = async (req, res) => {
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
-
-    if (task.project?.projectmanager.toString() !== req.user._id) {
-      // or do createdBy in Schema
-      return res.status(403).json({
-        message: "You can only update tasks from projects you manage",
-      });
-    }
     const updatedTask = await Task.findByIdAndUpdate(id, editedTask, {
       new: true,
     });
@@ -122,11 +110,6 @@ const deleteTask = async (req, res) => {
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
-    // if (task.createdBy.toString() !== req.user._id.toString()) {
-    //   return res.status(403).json({
-    //     message: "You can only delete tasks from projects you manage",
-    //   });
-    // }
     await Project.findByIdAndUpdate(task.project, { $pull: { tasks: id } });
 
     const deletedTask = await Task.findByIdAndDelete(id);

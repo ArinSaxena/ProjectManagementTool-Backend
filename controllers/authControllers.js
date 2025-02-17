@@ -4,19 +4,54 @@ const User = require("../models/userModel");
 require("dotenv").config();
 
 const sessions = new Set();
-
+const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/;
+const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
 const generateToken = (data) => {
-  return jwt.sign(data, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "2h" });
+  return jwt.sign(data, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "24h" });
 };
 
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    if (!name || !password || !email || !role) {
-      return res
-        .status(400)
-        .json({ message: "Username and password are required." });
+    // if (!name || !password || !email || !role) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "All filds are required." });
+    // }
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "name is required",
+      });
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is invalid",
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "Password is required",
+      });
+    }
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Password must be at least 8 characters long, contain at least one number, one uppercase letter, one lowercase letter, and one special character",
+      });
     }
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -59,6 +94,7 @@ const login = async (req, res) => {
     expiresIn: "30h",
   });
   sessions.add(refresh_token);
+  console.log(sessions)
   const token = generateToken(tokenData);
 
   return res.status(200).json({
@@ -91,36 +127,27 @@ const refreshToken = (req, res) => {
 };
 
 const logout = (req, res) => {
-  const refreshToken = req.body.refresh_token;
-  console.log(refreshToken);
-  console.log([...sessions]);
-
-  if (!sessions.has(refreshToken)) {
-    return res.status(400).json({ message: "No operation" });
-  }
-
-  sessions.delete(refreshToken);
-  return res.status(204).json({ message: "Logged out" });
-};
-
-const getUser = async (req, res) => {
-  // const id=  req.params.id;
-  // console.log(id);
-  const id = req.user._id;
   try {
-    const user = await User.findById(id).select("-password");
-    console.log(user);
-    if (!user) {
-      return res.status(404).json({ message: "User not found!" });
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(400).json({ message: "No operation, invalid token" });
     }
-    res.json({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      noOfcartItems: user?.cartItems?.length || 0,
-    });
+
+    const refreshToken = authHeader.split(" ")[1];
+
+    console.log("Extracted Refresh Token:", refreshToken);
+    console.log(sessions);
+
+    if (!sessions.has(refreshToken)) {
+      return res.status(400).json({ message: "No operation" });
+    }
+    sessions.delete(refreshToken);
+    console.log(sessions);
+
+    return res.status(200).json({ message: "Logged out" });
   } catch (err) {
-    res.status(500).json({ error: "Error fetching users" });
+    res.status(400).json({ message: "Internal server error" });
   }
 };
-module.exports = { register, login, refreshToken, logout, getUser };
+module.exports = { register, login, refreshToken, logout };

@@ -1,15 +1,18 @@
 const express = require("express");
 
-const { getTask, createTask, updateTask, deleteTask } = require("../controllers/taskControllers");
+const { getTask, createTask, updateTask, deleteTask, updateTaskStatus, editTask, getAllTask, getAllTasksForProjectManager, getAssignedTasksForUser } = require("../controllers/taskControllers");
 const Task = require("../models/taskModel");
 const authMiddleware = require("../middleware/authMiddleware");
+const checkRole = require("../middleware/checkRole");
 // const { updateMany } = require("../models/userModel");
 
 const router = express.Router();
 
-router.get("/task",authMiddleware,getTask)
-router.post("/task",authMiddleware,createTask)
-router.put("/task/:id",authMiddleware,updateTask)
-router.delete("/task/:id",authMiddleware,deleteTask)
+router.get("/task/",authMiddleware,checkRole("projectmanager"),getAllTasksForProjectManager)
+router.get("/task",authMiddleware,checkRole("user"),getAssignedTasksForUser)
+router.put("/task/:id",authMiddleware,checkRole("user"),updateTaskStatus)
+router.post("/task",authMiddleware,checkRole("projectmanager"),createTask)
+router.put("/task/:id",authMiddleware,checkRole("projectmanager"),editTask)
+router.delete("/task/:id",authMiddleware,checkRole("projectmanager"),deleteTask)
 
 module.exports = router

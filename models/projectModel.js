@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Task = require("./taskModel");
 const Schema = mongoose.Schema;
 
 const ProjectSchema = new Schema(
@@ -11,19 +12,23 @@ const ProjectSchema = new Schema(
       type: String,
       required: true,
     },
+    tasks: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Task",
+      },
+    ],
     projectmanager: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // projectmanager managing  this project
       required: true,
     },
-    members: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Users working on this project
-    },
-    tasks: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Task", // Tasks associated with this project
-    }],
+    users: [
+      {
+        type: mongoose.Schema.Types.ObjectId, // ????????????????
+        ref: "User", // Users working on this project
+      },
+    ],
     status: {
       type: String,
       enum: ["active", "completed", "on-hold"],

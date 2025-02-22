@@ -4,6 +4,7 @@ const Task = require("../models/taskModel");
 const getAllProject = async (req, res) => {
   try {
     const projects = await Project.find()
+
     return res.status(200).json(projects);
   } catch (error) {
     return res
@@ -13,7 +14,7 @@ const getAllProject = async (req, res) => {
 };
 
 const getProject = async (req, res) => {
-  const { id } = req.params;   //projectId
+  const { id } = req.params;   
   try {
     //  const projects = await Project.find({ projectmanager: req.user._id })
     //     .populate("tasks");
@@ -28,16 +29,17 @@ const getProject = async (req, res) => {
 };
 
 const createProject = async (req, res) => {
-  const { name, description, status, deadline, users, projectmanager } =
+  const { name, description, deadline, projectmanager } =
     req.body;
+    // console.log( { name, description, deadline, projectmanager })
   try {
     const createdProject = new Project({
       name,
       description,
-      status,
       deadline,
       projectmanager,
     });
+    // console.log(createdProject)
 
     await createdProject.save();
     res
@@ -71,7 +73,7 @@ const updateProject = async (req, res) => {
         new: true,
       }
     );
-    console.log(updatedProject);
+    // console.log(updatedProject);
     res
       .status(200)
       .json({ message: "Project updated successfully", updatedProject });

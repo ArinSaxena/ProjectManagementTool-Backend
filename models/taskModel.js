@@ -14,8 +14,8 @@ const TaskSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "in-progress", "completed"],
-      default: "pending",
+      enum: ["todo", "inProgress", "completed"],
+      default: "todo",
     },
     assignedTo: [{
       type: mongoose.Schema.Types.ObjectId,
@@ -32,6 +32,10 @@ const TaskSchema = new Schema(
     dueDate: {
       type: Date,
     },
+    deletedAt:{
+      type:Date,
+      default:null
+    }
   },
   { timestamps: true }
 );

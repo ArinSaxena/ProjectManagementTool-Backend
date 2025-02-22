@@ -17,13 +17,38 @@ const getUserProfile = async (req, res) => {
 
 const getAllusers = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
-    const user = users.filter((user) => user.role !== "admin");
+    let users;
+    let user;
+    if (req.user.role === "admin") {
+       users = await User.find().select("-password");
+       user = users.filter((user) => user.role !== "admin");
+    }else if(req.user.role === "projectmanager"){
+      users =await User.find().select("-password");
+       user = users.filter((user) => user.role === "user" )
+    }
+    else{
+      res.status(400).json({message:"Unauthorized access!"})
+    }
+
     res.status(200).json(user);
   } catch (err) {
     res
       .status(500)
       .json({ message: "Error getting Users!", message: err.message });
+  }
+};
+
+const getManagers = async (req, res) => {
+  try {
+    const managers = await User.find({ role: "projectmanager" }).select(
+      "-password -email"
+    );
+   
+    res.status(200).json(managers);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error Getting managers!", message: err.message });
   }
 };
 
@@ -70,6 +95,26 @@ const changeUserRole = async (req, res) => {
       .json({ message: "Error changing  UserRole", error: err.message });
   }
 };
+const getUser = async (req, res) => {
+  // const id=  req.params.id;
+  // console.log(id);
+  const id = req.user._id;
+  try {
+    const user = await User.findById(id).select("-password");
+    // console.log(user);
+    if (!user) {
+      return res.status(404).json({ message: "User not found!" });
+    }
+    res.json({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      noOfcartItems: user?.cartItems?.length || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching users" });
+  }
+};
 
 module.exports = {
   getUserProfile,
@@ -77,4 +122,5 @@ module.exports = {
   updateUser,
   deleteUser,
   changeUserRole,
+  getManagers,
 };

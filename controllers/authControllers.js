@@ -12,13 +12,8 @@ const generateToken = (data) => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-
-    // if (!name || !password || !email || !role) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "All filds are required." });
-    // }
+    const { name, email, password, role ,title} = req.body;
+    // console.log(name, email, password, role);
     if (!name) {
       return res.status(400).json({
         success: false,
@@ -57,11 +52,9 @@ const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: "Username already exists." });
     }
-
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(password, salt);
-
-    const newUser = new User({ name: name, password: hash, email, role });
+    const newUser = new User({ name: name, password: hash, email, role,title });
     await newUser.save();
 
     res.status(201).json({ message: "User registered successfully" });
@@ -71,36 +64,51 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
+    // console.log(email, password);
 
-  if (!email || !password) {
-    return res
-      .status(400)
-      .json({ message: "Username and password are required." });
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Username and password are required." });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({ message: "Username not registered!" });
+    }
+
+    const isMatched = await bcrypt.compare(password, user.password);
+    if (!isMatched) {
+      return res.status(401).json({ message: "Incorrect password!" });
+    }
+    const tokenData = { id: user._id, role: user.role };
+    const refresh_token = jwt.sign(
+      tokenData,
+      process.env.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: "30h",
+      }
+    );
+    sessions.add(refresh_token);
+    const token = generateToken(tokenData);
+
+    return res.status(200).json({
+      message: "Login successful",
+      token,
+      refresh_token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Internal server error!" });
   }
-
-  const user = await User.findOne({ email });
-
-  if (!user) {
-    return res.status(401).json({ message: "Username not registered!" });
-  }
-
-  const isMatched = await bcrypt.compare(password, user.password);
-  if (!isMatched) {
-    return res.status(401).json({ message: "Incorrect password!" });
-  }
-  const tokenData = { id: user._id, role: user.role };
-  const refresh_token = jwt.sign(tokenData, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: "30h",
-  });
-  sessions.add(refresh_token);
-  console.log(sessions)
-  const token = generateToken(tokenData);
-
-  return res.status(200).json({
-    token,
-    refresh_token,
-  });
 };
 
 const refreshToken = (req, res) => {
@@ -139,9 +147,9 @@ const logout = (req, res) => {
     console.log("Extracted Refresh Token:", refreshToken);
     console.log(sessions);
 
-    if (!sessions.has(refreshToken)) {
-      return res.status(400).json({ message: "No operation" });
-    }
+    // if (!sessions.has(refreshToken)) {
+    //   return res.status(400).json({ message: "No operation" });
+    // }
     sessions.delete(refreshToken);
     console.log(sessions);
 

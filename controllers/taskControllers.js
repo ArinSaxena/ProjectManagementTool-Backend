@@ -1,12 +1,29 @@
 const Task = require("../models/taskModel");
 const Project = require("../models/projectModel");
 
-const getAllTasksForProjectManager = async (req, res) => {
+const getAllTasks = async (req, res) => {
   try {
-    const tasks = await Task.find({ createdBy: req.user._id })
+    const tasks = await Task.find();
+    console.log(tasks);
+    res.status(200).json(tasks);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error fetching tasks!", error: err.message });
+  }
+};
+const getAllTasksForProjectManager = async (req, res) => {
+  const { status } = req.query;
+  const filter = { createdBy: req.user._id };
+  console.log(status);
+  try {
+    if (status) {
+      filter.status = status;
+    }
+    const tasks = await Task.find(filter)
       .populate("project", "name")
       .populate("assignedTo", "name");
-    console.log(tasks);
+    // console.log(tasks);
     res.status(200).json(tasks);
   } catch (err) {
     res
@@ -32,13 +49,13 @@ const getAssignedTasksForUser = async (req, res) => {
 
 const createTask = async (req, res) => {
   const { name, description, status, assignedTo, project, dueDate } = req.body;
-
   const createdBy = req.user._id;
+  console.log(name, description, status, assignedTo, project, dueDate);
   try {
     const newTask = new Task({
       name,
       description,
-      status: status || "pending",
+      status: status || "todo",
       assignedTo,
       project, // projectId
       createdBy,
@@ -60,6 +77,7 @@ const createTask = async (req, res) => {
 const updateTaskStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
+  console.log(status);
 
   try {
     const task = await Task.findById(id);
@@ -67,7 +85,7 @@ const updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    const validStatuses = ["pending", "in-progress", "completed"];
+    const validStatuses = ["todo", "inProgress", "completed"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid task status" });
     }
@@ -103,29 +121,95 @@ const editTask = async (req, res) => {
       .json({ message: "Error updating task!", error: err.message });
   }
 };
-const deleteTask = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const task = await Task.findById(id).populate("project");
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
-    }
-    await Project.findByIdAndUpdate(task.project, { $pull: { tasks: id } });
 
-    const deletedTask = await Task.findByIdAndDelete(id);
-    res.status(200).json({ message: "Task deleted successfully" });
+// soft delete task
+const softDeleteTask = async (req, res) => {
+  try {
+    const task = await Task.findByIdAndUpdate(
+      req.params.id,
+      { deletedAt: new Date() },
+      { new: true }
+    );
+    res.status(200).json({ message: "Task moved to trash", task });
   } catch (err) {
     res
       .status(500)
-      .json({ message: "Error deleting task!", error: err.message });
+      .json({ message: "Error moving task to trash", error: err.message });
   }
 };
 
+// Restore task from trash
+
+const restoreTask = async (req, res) => {
+  try {
+    const task = await Task.findByIdAndUpdate(
+      req.params.id,
+      { deleteAt: null },
+      { new: true }
+    );
+    res.status(200).json({ message: "Task restored ", task });
+  } catch (err) {
+    res.status(500).json({ message: "Error restoring task!", err });
+  }
+};
+
+// const permanentlyDeleteTask = async (req, res) => {
+//   const { id } = req.params;
+//   console.log(id);
+//   try {
+//     const task = await Task.findById(id).populate("project");
+//     if (!task) {
+//       return res.status(404).json({ message: "Task not found" });
+//     }
+//     await Project.findByIdAndUpdate(task.project, { $pull: { tasks: id } });
+
+//     const deletedTask = await Task.findByIdAndDelete(id);
+//     res.status(200).json({ message: "Task deleted successfully" });
+//   } catch (err) {
+//     res
+//       .status(500)
+//       .json({ message: "Error deleting task!", error: err.message });
+//   }
+// };
+const permanentlyDeleteTask = async (req, res) => {
+  const { id } = req.params;
+  console.log(id);
+  try {
+    await Task.findByIdAndDelete(id);
+    res.status(200).json({ message: "Task deleted permanently" });
+  } catch (err) {
+    res
+      .status(500)
+      .json({
+        message: "Error deleting task permanenlty!",
+        error: err.message,
+      });
+  }
+};
+
+// Auto delete task older than one month
+
+const deleteOldTrashTasks = async (req, res) => {
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  try {
+    await Task.deleteMany({ deletedAt: { $lte: oneMonthAgo } });
+    console.log("Old trash tasks deleted successfully");
+  } catch (err) {
+    console.error("Error deleting old trash tasks:", err.message);
+  }
+};
+// Schedule Auto-Delete (Runs every 24 hours)
+setInterval(deleteOldTrashTasks, 24 * 60 * 60 * 1000);
+
 module.exports = {
+  getAllTasks,
   getAllTasksForProjectManager,
   getAssignedTasksForUser,
   createTask,
   editTask,
   updateTaskStatus,
-  deleteTask,
+  softDeleteTask,
+  restoreTask,
+  permanentlyDeleteTask,
 };

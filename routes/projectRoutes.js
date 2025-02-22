@@ -5,9 +5,9 @@ const authMiddleware = require("../middleware/authMiddleware");
 const checkRole = require("../middleware/checkRole");
 
 const router = express.Router();
-router.get("/project",authMiddleware,checkRole("admin"),getAllProject)
+router.get("/all-projects",authMiddleware,checkRole("admin"),getAllProject)
 router.get("/project/:id",authMiddleware,checkRole("projectmanager"),getProject)
-router.post("/project",authMiddleware,checkRole("admin"),createProject)
+router.post("/createProject",authMiddleware,checkRole("admin"),createProject)
 router.put("/project/:id",authMiddleware,checkRole("admin","projectmanager"),updateProject)
 router.delete("/project/:id",authMiddleware,checkRole("admin"),deleteProject)
 

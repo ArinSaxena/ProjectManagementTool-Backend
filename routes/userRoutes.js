@@ -6,14 +6,16 @@ const {
   deleteUser,
   changeUserRole,
   updateUser,
+  getManagers,
 } = require("../controllers/userControllers");
 const authMiddleware = require("../middleware/authMiddleware");
 const checkRole = require("../middleware/checkRole");
 
 const router = express.Router();
 
-router.get("/profile",authMiddleware,checkRole("user"), getUserProfile);  //User can view their own profile
-router.get("/all-users", authMiddleware,checkRole("admin"), getAllusers); // adminOnly
+router.get("/profile",authMiddleware,checkRole("admin","user","projectmanager"), getUserProfile);  //User can view their own profile
+router.get("/all-users", authMiddleware,checkRole("admin","projectmanager"), getAllusers); // adminOnly
+router.get("/managers", authMiddleware,checkRole("admin"), getManagers); // adminOnly
 router.put("/updateUser",authMiddleware,checkRole("user"),updateUser);   // User and admin can update profile
 router.delete("/delete/:id", authMiddleware,checkRole("admin"), deleteUser); // adminOnly
 // router.put("/change-role/:id", authMiddleware,checkRole("admin"), changeUserRole);// adminOnly

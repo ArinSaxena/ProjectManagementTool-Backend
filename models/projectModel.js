@@ -37,6 +37,10 @@ const ProjectSchema = new Schema(
     deadline: {
       type: Date,
     },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

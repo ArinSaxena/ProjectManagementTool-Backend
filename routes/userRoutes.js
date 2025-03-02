@@ -2,11 +2,14 @@ const express = require("express");
 const User = require("../models/userModel");
 const {
   getUserProfile,
-  getAllusers,
-  deleteUser,
   changeUserRole,
   updateUser,
   getManagers,
+  permananetlyDeleteUser,
+  softDeleteUser,
+  restoreUser,
+  getAllUsers,
+  getTrashUsers,
 } = require("../controllers/userControllers");
 const authMiddleware = require("../middleware/authMiddleware");
 const checkRole = require("../middleware/checkRole");
@@ -14,10 +17,14 @@ const checkRole = require("../middleware/checkRole");
 const router = express.Router();
 
 router.get("/profile",authMiddleware,checkRole("admin","user","projectmanager"), getUserProfile);  //User can view their own profile
-router.get("/all-users", authMiddleware,checkRole("admin","projectmanager"), getAllusers); // adminOnly
+router.get("/all-users", authMiddleware,checkRole("admin","projectmanager"), getAllUsers); // adminOnly
+router.get("/trash", authMiddleware,checkRole("admin","projectmanager"), getTrashUsers); 
 router.get("/managers", authMiddleware,checkRole("admin"), getManagers); // adminOnly
 router.put("/updateUser",authMiddleware,checkRole("user"),updateUser);   // User and admin can update profile
-router.delete("/delete/:id", authMiddleware,checkRole("admin"), deleteUser); // adminOnly
+router.delete("/delete/:id", authMiddleware,checkRole("admin","projectmanager"), permananetlyDeleteUser); // adminOnly
+router.put("/trash/:id",authMiddleware,checkRole("admin","projectmanager"),softDeleteUser); //Move to trash
+router.put("/restore/:id",authMiddleware,checkRole("admin","projectmanager"),restoreUser)   // Restore from trash
+
 // router.put("/change-role/:id", authMiddleware,checkRole("admin"), changeUserRole);// adminOnly
 
 module.exports = router;

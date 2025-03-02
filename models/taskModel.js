@@ -17,10 +17,12 @@ const TaskSchema = new Schema(
       enum: ["todo", "inProgress", "completed"],
       default: "todo",
     },
-    assignedTo: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    }],
+    assignedTo: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     project: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Project",
@@ -32,10 +34,10 @@ const TaskSchema = new Schema(
     dueDate: {
       type: Date,
     },
-    deletedAt:{
-      type:Date,
-      default:null
-    }
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -22,7 +22,11 @@ const UserSchema = new Schema({
   },
   title:{
     type:String
-  }
+  },
+  deletedAt:{
+    type:Date,
+    default:null
+  },
 });
 
 const User = mongoose.model("User", UserSchema);

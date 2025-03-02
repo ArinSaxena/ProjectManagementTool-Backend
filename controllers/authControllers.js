@@ -144,14 +144,14 @@ const logout = (req, res) => {
 
     const refreshToken = authHeader.split(" ")[1];
 
-    console.log("Extracted Refresh Token:", refreshToken);
-    console.log(sessions);
+    // console.log("Extracted Refresh Token:", refreshToken);
+    // console.log(sessions);
 
     // if (!sessions.has(refreshToken)) {
     //   return res.status(400).json({ message: "No operation" });
     // }
     sessions.delete(refreshToken);
-    console.log(sessions);
+    // console.log(sessions);
 
     return res.status(200).json({ message: "Logged out" });
   } catch (err) {

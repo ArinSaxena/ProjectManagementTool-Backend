@@ -3,8 +3,8 @@ const Project = require("../models/projectModel");
 
 const getAllTasks = async (req, res) => {
   try {
-    const tasks = await Task.find();
-    console.log(tasks);
+    const tasks = await Task.find({ deletedAt: null });
+    // console.log(tasks);
     res.status(200).json(tasks);
   } catch (err) {
     res
@@ -12,10 +12,44 @@ const getAllTasks = async (req, res) => {
       .json({ message: "Error fetching tasks!", error: err.message });
   }
 };
+// const getTrashTasks = async(req,res) => {
+//   try {
+//     const  TrashedTasks = await Task.find({deletedAt : {$ne :null}});
+//     console.log(TrashedTasks);
+//     res.status(200).json(TrashedTasks);
+//   } catch (err) {
+//     res
+//       .status(500)
+//       .json({ message: "Error fetching tasks!", error: err.message });
+//   }
+// }
+
+const getTrashTasks = async (req, res) => {
+  try {
+    let filter = { deletedAt: { $ne: null } }; // ✅ Common filter for trashed tasks
+
+    if (req.user.role === "projectmanager") {
+      filter.createdBy = req.user._id; // ✅ Project Manager gets only their own tasks
+      filter.status = { $in: ["completed", "inProgress", "todo"] }; // ✅ Include all three statuses
+    }
+
+    const trashedTasks = await Task.find(filter)
+      .populate("project", "name")
+      .populate("assignedTo", "name");
+
+    // console.log(trashedTasks);
+    res.status(200).json(trashedTasks);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error fetching trashed tasks!", error: err.message });
+  }
+};
+
 const getAllTasksForProjectManager = async (req, res) => {
   const { status } = req.query;
-  const filter = { createdBy: req.user._id };
-  console.log(status);
+  const filter = { createdBy: req.user._id, deletedAt: null };
+  // console.log(status);
   try {
     if (status) {
       filter.status = status;
@@ -50,7 +84,7 @@ const getAssignedTasksForUser = async (req, res) => {
 const createTask = async (req, res) => {
   const { name, description, status, assignedTo, project, dueDate } = req.body;
   const createdBy = req.user._id;
-  console.log(name, description, status, assignedTo, project, dueDate);
+  // console.log(name, description, status, assignedTo, project, dueDate);
   try {
     const newTask = new Task({
       name,
@@ -77,7 +111,7 @@ const createTask = async (req, res) => {
 const updateTaskStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-  console.log(status);
+  // console.log(status);
 
   try {
     const task = await Task.findById(id);
@@ -144,7 +178,7 @@ const restoreTask = async (req, res) => {
   try {
     const task = await Task.findByIdAndUpdate(
       req.params.id,
-      { deleteAt: null },
+      { deletedAt: null },
       { new: true }
     );
     res.status(200).json({ message: "Task restored ", task });
@@ -152,58 +186,39 @@ const restoreTask = async (req, res) => {
     res.status(500).json({ message: "Error restoring task!", err });
   }
 };
-
-// const permanentlyDeleteTask = async (req, res) => {
-//   const { id } = req.params;
-//   console.log(id);
-//   try {
-//     const task = await Task.findById(id).populate("project");
-//     if (!task) {
-//       return res.status(404).json({ message: "Task not found" });
-//     }
-//     await Project.findByIdAndUpdate(task.project, { $pull: { tasks: id } });
-
-//     const deletedTask = await Task.findByIdAndDelete(id);
-//     res.status(200).json({ message: "Task deleted successfully" });
-//   } catch (err) {
-//     res
-//       .status(500)
-//       .json({ message: "Error deleting task!", error: err.message });
-//   }
-// };
 const permanentlyDeleteTask = async (req, res) => {
   const { id } = req.params;
-  console.log(id);
+  // console.log(id);
   try {
     await Task.findByIdAndDelete(id);
     res.status(200).json({ message: "Task deleted permanently" });
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        message: "Error deleting task permanenlty!",
-        error: err.message,
-      });
+    res.status(500).json({
+      message: "Error deleting task permanenlty!",
+      error: err.message,
+    });
   }
 };
 
 // Auto delete task older than one month
-
-const deleteOldTrashTasks = async (req, res) => {
+const deleteOldTrashTasks = async () => {
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
   try {
-    await Task.deleteMany({ deletedAt: { $lte: oneMonthAgo } });
-    console.log("Old trash tasks deleted successfully");
+    const result = await Task.deleteMany({ deletedAt: { $lte: oneMonthAgo } });
+    console.log(`Deleted ${result.deletedCount} old trash tasks`);
   } catch (err) {
     console.error("Error deleting old trash tasks:", err.message);
   }
 };
 // Schedule Auto-Delete (Runs every 24 hours)
-setInterval(deleteOldTrashTasks, 24 * 60 * 60 * 1000);
+// setInterval(async () => {
+//   await deleteOldTrashTasks();
+// }, 60 * 1000);
 
 module.exports = {
   getAllTasks,
+  getTrashTasks,
   getAllTasksForProjectManager,
   getAssignedTasksForUser,
   createTask,
@@ -211,5 +226,6 @@ module.exports = {
   updateTaskStatus,
   softDeleteTask,
   restoreTask,
+  deleteOldTrashTasks,
   permanentlyDeleteTask,
 };

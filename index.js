@@ -6,7 +6,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const projectRoutes = require("./routes/projectRoutes");
-const taskRoutes = require("./routes/taskRoutes");
+const taskRoutes = require("./routes/taskRoutes");8
 const { PORT, FRONTEND_URL } = require("./config/envCongif");
 
 

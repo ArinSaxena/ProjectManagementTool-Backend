@@ -167,7 +167,8 @@ const deleteOldTrashUser = async (req, res) => {
   } catch (err) {
     console.error("Error deleting old trash users:", err.message);
   }
-};
+}
+;
 
 module.exports = {
   getUserProfile,

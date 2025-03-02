@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
-
-const MONGO_URI = process.env.MONGO_URI;
+const { MONGO_URI } = require("./envCongif");
 
 mongoose
   .connect(MONGO_URI)

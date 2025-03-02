@@ -1,13 +1,14 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
-require("dotenv").config();
+const { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } = require("../config/envCongif");
+
 
 const sessions = new Set();
 const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/;
 const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
 const generateToken = (data) => {
-  return jwt.sign(data, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "24h" });
+  return jwt.sign(data,ACCESS_TOKEN_SECRET, { expiresIn: "24h" });
 };
 
 const register = async (req, res) => {
@@ -87,7 +88,7 @@ const login = async (req, res) => {
     const tokenData = { id: user._id, role: user.role };
     const refresh_token = jwt.sign(
       tokenData,
-      process.env.REFRESH_TOKEN_SECRET,
+      REFRESH_TOKEN_SECRET,
       {
         expiresIn: "30h",
       }
@@ -120,7 +121,7 @@ const refreshToken = (req, res) => {
 
   jwt.verify(
     refresh_token,
-    process.env.REFRESH_TOKEN_SECRET,
+    REFRESH_TOKEN_SECRET,
     (err, token_data) => {
       if (err) {
         return res
